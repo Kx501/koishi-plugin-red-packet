@@ -1,22 +1,40 @@
 {
   "name": "@kx501/koishi-plugin-red-packet",
   "description": "来抢个手气红包吧",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
     "lib",
     "dist"
   ],
+  "contributors": [
+    "kx501 <x501@foxmail.com>"
+  ],
+  "homepage": "https://github.com/Kx501/koishi-plugin-red-packet",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kx501/koishi-plugin-red-packet.git"
+  },
   "license": "MIT",
-  "scripts": {},
   "keywords": [
     "chatbot",
     "koishi",
-    "plugin"
+    "plugin",
+    "red-packet"
   ],
-  "devDependencies": {},
   "peerDependencies": {
     "koishi": "^4.17.11"
+  },
+  "koishi": {
+    "service": {
+      "required": [
+        "monetary",
+        "database"
+      ],
+      "optional": []
+    },
+    "preview": true,
+    "hidden": true
   }
 }
