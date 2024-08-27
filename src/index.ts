@@ -24,6 +24,7 @@ export interface RedEnvelopeTable {
   grabbedCount: number;
   grabbedBy: number[];
   createdAt: Date;
+  channelId: string; // 新增字段，记录红包所在的频道ID
 }
 
 export function apply(ctx: Context) {
@@ -37,11 +38,11 @@ export function apply(ctx: Context) {
     grabbedCount: 'integer',
     grabbedBy: 'json',
     createdAt: 'date',
+    channelId: 'char', // 新增字段，记录红包所在的频道ID
   }, { autoInc: true });
 
   // 手气红包指令
   ctx.command('packet <money:integer> <count:integer>', '发送积分手气红包', {
-
     checkArgCount: true
   })
     .alias('发送红包')
@@ -66,6 +67,7 @@ export function apply(ctx: Context) {
         grabbedCount: 0,
         grabbedBy: [],
         createdAt: new Date(),
+        channelId: session.channelId, // 记录红包所在的频道ID
       });
 
       return `红包发送成功！金额为 ${money} 积分，共 ${count} 个。`;
@@ -78,7 +80,7 @@ export function apply(ctx: Context) {
       const userAid = (await ctx.database.get('binding', { pid: [session.userId] }, ['aid']))[0]?.aid;
 
       // 查找所有未抢完的红包
-      const redEnvelope = await ctx.database.get('red_packet_kx', { remainingAmount: { $gt: 0 } }, ['id', 'sender', 'remainingAmount', 'totalCount', 'grabbedCount', 'grabbedBy']);
+      const redEnvelope = await ctx.database.get('red_packet_kx', { remainingAmount: { $gt: 0 }, channelId: session.channelId }, ['id', 'sender', 'remainingAmount', 'totalCount', 'grabbedCount', 'grabbedBy']);
 
       if (redEnvelope.length === 0) return '当前没有可抢的红包。';
 
@@ -95,7 +97,6 @@ export function apply(ctx: Context) {
       let grabAmount = 0;
       if (randomEnvelope.grabbedCount + 1 === randomEnvelope.totalCount) grabAmount = randomEnvelope.remainingAmount;  // 最后一个红包抢到剩下所有金额
       else grabAmount = Random.int(1, randomEnvelope.remainingAmount); // 随机生成一个金额
-
 
       // 更新红包剩余金额和已抢个数
       await ctx.database.set('red_packet_kx', randomEnvelope.id, {
