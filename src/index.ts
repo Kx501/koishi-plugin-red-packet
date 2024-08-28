@@ -5,6 +5,25 @@ export const name = 'red-packet';
 
 export const inject = ['monetary', 'database'];
 
+export const usage = `
+---
+**免责声明**
+
+感谢您使用我们的插件！请您仔细阅读以下条款，以确保您了解并接受我们的政策：
+
+1. **积分使用**：本插件中使用的“积分”仅为插件游戏内部使用，不具备任何货币价值，也不可兑换为现金或其他实物商品。
+2. **参与条件**：使用本插件不需要支付任何费用，积分可以通过插件游戏内的活动获得。
+3. **禁止赌博**：严禁使用本插件进行任何形式的赌博活动。
+4. **公平竞争**：本插件旨在提供娱乐体验，所有参与者均应遵守公平竞争的原则。
+5. **法律责任**：使用者必须遵守当地法律法规，若因违反相关规定而产生的任何法律后果，均由使用者自行承担。
+6. **免责声明更新**：我们保留随时修改本声明的权利，请及时更新插件以获取最新版本的免责声明。**若因未及时更新插件而导致的责任和损失，本方概不负责**。
+7. **解释权归属**：本声明的最终解释权归插件开发者所有。
+
+通过使用本插件，即视为**同意上述条款**。请确保您已经仔细阅读并理解以上内容。
+
+---
+`;
+
 export interface Config { }
 
 export const Config: Schema<Config> = Schema.object({})
@@ -45,12 +64,11 @@ export function apply(ctx: Context) {
   ctx.command('packet <money:integer> <count:integer>', '发送积分手气红包', {
     checkArgCount: true
   })
-    .alias('发送红包')
+    .alias('发红包')
     .action(async ({ session }, money, count) => {
       let userPoints = 0;
-      let userAid: number;
 
-      userAid = (await ctx.database.get('binding', { pid: [session.userId] }, ['aid']))[0]?.aid;
+      const userAid = (await ctx.database.get('binding', { pid: [session.userId] }, ['aid']))[0]?.aid;
       userPoints = (await ctx.database.get('monetary', { uid: userAid }, ['value']))[0]?.value;
       if (userPoints === undefined) ctx.monetary.gain(userAid, 0);
       if (userPoints < money) return `当前余额不足，你有 ${userPoints} 积分`;
@@ -113,7 +131,7 @@ export function apply(ctx: Context) {
       // 增加抢红包者的积分
       await ctx.monetary.gain(userAid, grabAmount);
 
-      return `恭喜你从 ${randomEnvelope.sender} 发送的红包中抢到 ${grabAmount} 积分！`;
+      return `恭喜你从【${randomEnvelope.sender}】发送的红包中抢到 ${grabAmount} 积分！`;
     });
 
   // 查询积分指令
