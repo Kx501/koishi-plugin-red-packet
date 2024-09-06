@@ -18,3 +18,4 @@ tsconfig.tsbuildinfo
 *.sln
 
 *.ps1
+*.bat

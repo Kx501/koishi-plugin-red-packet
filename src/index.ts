@@ -143,4 +143,21 @@ export function apply(ctx: Context) {
       const userPoints = (await ctx.database.get('monetary', { uid: [userAid] }, ['value']))[0]?.value;
       return `你的当前积分是 ${userPoints}。`;
     });
+
+  // 查询当前群聊可抢红包列表指令
+  ctx.command('packet.list', '查询当前群聊可抢红包列表')
+    .alias('红包列表')
+    .action(async ({ session }) => {
+      // 查找当前群聊中所有未抢完的红包
+      const redEnvelopes = await ctx.database.get('red_packet_kx', { remainingAmount: { $gt: 0 }, channelId: session.channelId }, ['id', 'sender', 'totalCount', 'grabbedCount']);
+
+      if (redEnvelopes.length === 0) return '当前没有可抢的红包。';
+
+      let response = '当前可抢的红包列表：\n';
+      redEnvelopes.forEach((envelope, index) => {
+        response += `${index + 1}. 发送者: ${envelope.sender}, 剩余个数: ${envelope.totalCount - envelope.grabbedCount}\n`;
+      });
+
+      return response;
+    });
 }
