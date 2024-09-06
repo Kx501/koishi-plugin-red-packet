@@ -135,17 +135,8 @@ export function apply(ctx: Context) {
       return `恭喜你从【${randomEnvelope.sender}】发送的红包中抢到 ${grabAmount} 积分！`;
     });
 
-  // 查询积分指令
-  ctx.command('balance', '查询当前积分')
-    .alias('查询积分')
-    .action(async ({ session }) => {
-      const userAid = (await ctx.database.get('binding', { pid: [session.userId] }, ['aid']))[0]?.aid;
-      const userPoints = (await ctx.database.get('monetary', { uid: [userAid] }, ['value']))[0]?.value;
-      return `你的当前积分是 ${userPoints}。`;
-    });
-
   // 查询当前群聊可抢红包列表指令
-  ctx.command('packet.list', '查询当前群聊可抢红包列表')
+  ctx.command('packet').subcommand('list', '查询当前群聊可抢红包列表')
     .alias('红包列表')
     .action(async ({ session }) => {
       // 查找当前群聊中所有未抢完的红包
@@ -160,4 +151,14 @@ export function apply(ctx: Context) {
 
       return response;
     });
+
+  // 查询积分指令
+  ctx.command('balance', '查询当前积分')
+    .alias('查询积分')
+    .action(async ({ session }) => {
+      const userAid = (await ctx.database.get('binding', { pid: [session.userId] }, ['aid']))[0]?.aid;
+      const userPoints = (await ctx.database.get('monetary', { uid: [userAid] }, ['value']))[0]?.value;
+      return `你的当前积分是 ${userPoints}。`;
+    });
+
 }
