@@ -145,8 +145,8 @@ export function apply(ctx: Context) {
       if (redEnvelopes.length === 0) return '当前没有可抢的红包。';
 
       let response = '当前可抢的红包列表：\n';
-      redEnvelopes.forEach((envelope, index) => {
-        response += `${index + 1}. 发送者: ${envelope.sender}, 剩余个数: ${envelope.totalCount - envelope.grabbedCount}\n`;
+      redEnvelopes.forEach((envelope) => {
+        response += `【发送者】${envelope.sender},\n【剩余个数】${envelope.totalCount - envelope.grabbedCount}\n`;
       });
 
       return response;
