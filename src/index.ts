@@ -140,14 +140,27 @@ export function apply(ctx: Context) {
     .alias('红包列表')
     .action(async ({ session }) => {
       // 查找当前群聊中所有未抢完的红包
-      const redEnvelopes = await ctx.database.get('red_packet_kx', { remainingAmount: { $gt: 0 }, channelId: session.channelId }, ['id', 'sender', 'totalCount', 'grabbedCount']);
+      const redEnvelopes = await ctx.database.get('red_packet_kx', { remainingAmount: { $gt: 0 }, channelId: session.channelId }, ['id', 'sender', 'totalCount', 'grabbedCount', 'remainingAmount', 'createdAt']);
 
       if (redEnvelopes.length === 0) return '当前没有可抢的红包。';
 
       let response = '当前可抢的红包列表：\n';
-      redEnvelopes.forEach((envelope) => {
-        response += `【发送者】${envelope.sender},\n【剩余个数】${envelope.totalCount - envelope.grabbedCount}\n`;
-      });
+      const now = new Date();
+
+      for (const envelope of redEnvelopes) {
+        const createdAt = new Date(envelope.createdAt);
+        const diffInDays = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+
+        if (diffInDays > 7) {
+          // 如果红包发送时间超过一星期，返还剩余积分
+          const senderAid = (await ctx.database.get('binding', { pid: [envelope.sender] }, ['aid']))[0]?.aid;
+          if (senderAid) {
+            await ctx.monetary.gain(senderAid, envelope.remainingAmount);
+          }
+          // 删除过期的红包
+          await ctx.database.remove('red_packet_kx', { id: envelope.id });
+        } else response += `【发送者】${envelope.sender},\n【剩余个数】${envelope.totalCount - envelope.grabbedCount}\n`;
+      }
 
       return response;
     });
@@ -158,7 +171,7 @@ export function apply(ctx: Context) {
     .action(async ({ session }) => {
       const userAid = (await ctx.database.get('binding', { pid: [session.userId] }, ['aid']))[0]?.aid;
       const userPoints = (await ctx.database.get('monetary', { uid: [userAid] }, ['value']))[0]?.value;
-      return `你的当前积分是 ${userPoints}。`;
+      return `你的积分为 ${userPoints}。`;
     });
 
 }
