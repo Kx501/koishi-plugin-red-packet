@@ -176,20 +176,21 @@ export function apply(ctx: Context) {
     .option('userid', '-u [char] 查询@指定用户积分')
     .action(async ({ session, options }) => {
       let id = options?.userid;
-      if (id) {
-        const atElements = h.select(session?.elements, 'at');
-        if (atElements?.length === 1)
-          if (atElements[0]?.attrs?.id !== session.selfId) id = atElements[0].attrs.id;
-          else id = session.userId;
-        else if (atElements.length > 1) id = atElements[1].attrs.id; // 如果有多个@，则使用第二个@的用户ID
-      } else id = session.userId; // 如果没有指定用户ID，则使用当前用户ID
+      const atElements = h.select(session?.elements, 'at');
+
+      if (!id) id = session.userId;
+      else if (atElements?.length) {
+        if (atElements.length === 1 && atElements[0]?.attrs?.id !== session.selfId) id = atElements[0].attrs.id;
+        else if (atElements.length > 1) id = atElements[1].attrs.id;
+      }
       const userAid = (await ctx.database.get('binding', { pid: [id] }, ['aid']))[0]?.aid;
       let userPoints = (await ctx.database.get('monetary', { uid: [userAid] }, ['value']))[0]?.value;
-      if (userPoints === undefined) {
-        userPoints = 0;
-        await ctx.monetary.gain(userAid, 0); // 确保用户有一个初始积分记录
-      }
-      return `当前积分为 ${userPoints}。`;
-    });
-
+      if (userAid) {
+        if (userPoints === undefined) {
+          userPoints = 0;
+          await ctx.monetary.gain(userAid, 0); // 确保用户有一个初始积分记录
+        }
+        return `当前积分为 ${userPoints}。`;
+      } else return '当前用户不存在';
+    })
 }
