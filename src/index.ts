@@ -1,7 +1,9 @@
-import { Context, Random, Schema } from 'koishi';
+import { Context, Random, Schema, Logger, Session, h } from 'koishi';
 import { } from 'koishi-plugin-monetary';
 
 export const name = 'red-packet';
+
+export const log = new Logger('red-packet');
 
 export const inject = ['monetary', 'database'];
 
@@ -12,13 +14,9 @@ export const usage = `
 感谢您使用我们的插件！请您仔细阅读以下条款，以确保您了解并接受我们的政策：
 
 1. **游戏性质**：本插件提供的红包游戏仅供娱乐之用，不涉及任何真实的货币交易或赌博行为。
-2. **积分使用**：本插件中使用的“积分”仅为插件游戏内部使用，不具备任何货币价值，也不可兑换为现金或其他实物商品。
-3. **参与条件**：使用本插件不需要支付任何费用，积分可以通过插件游戏内的活动获得。
-4. **禁止赌博**：严禁使用本插件进行任何形式的赌博活动。
-5. **公平竞争**：本插件旨在提供娱乐体验，所有参与者均应遵守公平竞争的原则。
-6. **法律责任**：使用者必须遵守当地法律法规，若因违反相关规定而产生的任何法律后果，均由使用者自行承担。
-7. **免责声明更新**：我们保留随时修改本声明的权利，请及时更新插件以获取最新版本的免责声明。**若因未及时更新插件而导致的责任和损失，本方概不负责**。
-8. **解释权归属**：本声明的最终解释权归插件开发者所有。
+2. **法律责任**：使用者必须遵守当地法律法规，若因违反相关规定而产生的任何法律后果，均由使用者自行承担。
+3. **免责声明更新**：我们保留随时修改本声明的权利，请及时更新插件以获取最新版本的免责声明。**若因未及时更新插件而导致的责任和损失，本方概不负责**。
+4. **解释权归属**：本声明的最终解释权归插件开发者所有。
 
 通过使用本插件，即视为**同意上述条款**。请确保您已经仔细阅读并理解以上内容。
 
@@ -48,6 +46,13 @@ export interface RedEnvelopeTable {
 }
 
 export function apply(ctx: Context) {
+  // // 测试
+  // ctx.on('message-created', (session: Session) => {
+  //   log.info(JSON.stringify(session, null, 2))
+  //   log.info(h.select(session?.elements, 'at')[0]?.attrs?.id)
+  //   log.info(JSON.stringify(h.select(session?.quote?.elements, 'at'), null, 2))
+  // }, true)
+
   // 扩展数据库表
   ctx.model.extend('red_packet_kx', {
     id: 'integer',
@@ -168,10 +173,23 @@ export function apply(ctx: Context) {
   // 查询积分指令
   ctx.command('balance', '查询当前积分')
     .alias('查询积分')
-    .action(async ({ session }) => {
-      const userAid = (await ctx.database.get('binding', { pid: [session.userId] }, ['aid']))[0]?.aid;
-      const userPoints = (await ctx.database.get('monetary', { uid: [userAid] }, ['value']))[0]?.value;
-      return `你的积分为 ${userPoints}。`;
+    .option('userid', '-u [char] 查询@指定用户积分')
+    .action(async ({ session, options }) => {
+      let id = options?.userid;
+      if (id) {
+        const atElements = h.select(session?.elements, 'at');
+        if (atElements?.length === 1)
+          if (atElements[0]?.attrs?.id !== session.selfId) id = atElements[0].attrs.id;
+          else id = session.userId;
+        else if (atElements.length > 1) id = atElements[1].attrs.id; // 如果有多个@，则使用第二个@的用户ID
+      } else id = session.userId; // 如果没有指定用户ID，则使用当前用户ID
+      const userAid = (await ctx.database.get('binding', { pid: [id] }, ['aid']))[0]?.aid;
+      let userPoints = (await ctx.database.get('monetary', { uid: [userAid] }, ['value']))[0]?.value;
+      if (userPoints === undefined) {
+        userPoints = 0;
+        await ctx.monetary.gain(userAid, 0); // 确保用户有一个初始积分记录
+      }
+      return `当前积分为 ${userPoints}。`;
     });
 
 }
