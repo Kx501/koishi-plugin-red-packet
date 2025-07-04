@@ -183,9 +183,11 @@ export function apply(ctx: Context) {
         if (atElements.length === 1 && atElements[0]?.attrs?.id !== session.selfId) id = atElements[0].attrs.id;
         else if (atElements.length > 1) id = atElements[1].attrs.id;
       }
+      log.debug(`查询积分的用户ID: ${id}`);
       const userAid = (await ctx.database.get('binding', { pid: [id] }, ['aid']))[0]?.aid;
       let userPoints = (await ctx.database.get('monetary', { uid: [userAid] }, ['value']))[0]?.value;
-      if (userAid) {
+      log.debug(`查询积分的用户AID: ${userAid}`);
+      if (userAid !== undefined) {
         if (userPoints === undefined) {
           userPoints = 0;
           await ctx.monetary.gain(userAid, 0); // 确保用户有一个初始积分记录
